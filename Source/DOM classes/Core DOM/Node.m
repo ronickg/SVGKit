@@ -6,7 +6,7 @@
 //  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
 //
 
-#import "Node.h"
+#import "SVGKit/Node.h"
 #import "Node+Mutable.h"
 
 #import "NodeList+Mutable.h"
@@ -35,7 +35,7 @@
 - (id)init
 {
     NSAssert( FALSE, @"This class has no init method - it MUST NOT be init'd via init - you MUST use one of the multi-argument constructors instead" );
-	
+
     return nil;
 }
 
@@ -47,13 +47,13 @@
 		 So we have to fix it.*/
 		v = [NSString stringWithString:v];
 	}
-	
+
     self = [super init];
     if (self) {
 		self.nodeType = nt;
         switch( nt )
 		{
-				
+
 			case DOMNodeType_ATTRIBUTE_NODE:
 			case DOMNodeType_CDATA_SECTION_NODE:
 			case DOMNodeType_COMMENT_NODE:
@@ -63,8 +63,8 @@
 				self.nodeName = n;
 				self.nodeValue = v;
 			}break;
-			
-				
+
+
 			case DOMNodeType_DOCUMENT_NODE:
 			case DOMNodeType_DOCUMENT_TYPE_NODE:
 			case DOMNodeType_DOCUMENT_FRAGMENT_NODE:
@@ -74,11 +74,11 @@
 			case DOMNodeType_ELEMENT_NODE:
 			{
 				NSAssert( FALSE, @"NodeType = %i cannot be init'd with a value; nodes of that type have no value in the DOM spec", nt);
-				
+
 				self = nil;
 			}break;
 		}
-		
+
 		self.childNodes = [[NodeList alloc] init];
     }
     return self;
@@ -91,7 +91,7 @@
 		self.nodeType = nt;
         switch( nt )
 		{
-				
+
 			case DOMNodeType_ATTRIBUTE_NODE:
 			case DOMNodeType_CDATA_SECTION_NODE:
 			case DOMNodeType_COMMENT_NODE:
@@ -99,11 +99,11 @@
 			case DOMNodeType_TEXT_NODE:
 			{
 				NSAssert( FALSE, @"NodeType = %i cannot be init'd without a value; nodes of that type MUST have a value in the DOM spec", nt);
-				
+
 				self = nil;
 			}break;
-				
-				
+
+
 			case DOMNodeType_DOCUMENT_NODE:
 			case DOMNodeType_DOCUMENT_TYPE_NODE:
 			case DOMNodeType_DOCUMENT_FRAGMENT_NODE:
@@ -113,16 +113,16 @@
 			{
 				self.nodeName = n;
 			}break;
-				
+
 			case DOMNodeType_ELEMENT_NODE:
 			{
-				
+
 				self.nodeName = n;
-				
+
 				self.attributes = [[NamedNodeMap alloc] init];
 			}break;
 		}
-		
+
 		self.childNodes = [[NodeList alloc] init];
     }
     return self;
@@ -136,19 +136,19 @@
 	self.localName = [nameSpaceParts lastObject];
 	if( [nameSpaceParts count] > 1 )
 		self.prefix = [nameSpaceParts objectAtIndex:0];
-		
+
 	self.namespaceURI = nsURI;
 }
 
 - (id)initType:(DOMNodeType) nt name:(NSString*) n inNamespace:(NSString*) nsURI
 {
 	self = [self initType:nt name:n];
-	
+
 	if( self )
 	{
 		[self postInitNamespaceHandling:nsURI];
 	}
-	
+
 	return self;
 }
 
@@ -160,14 +160,14 @@
 		 So we have to fix it.*/
 		v = [NSString stringWithString:v];
 	}
-	
+
 	self = [self initType:nt name:n value:v];
-	
+
 	if( self )
 	{
 		[self postInitNamespaceHandling:nsURI];
 	}
-	
+
 	return self;
 }
 
@@ -196,7 +196,7 @@
     else
     {
         NSUInteger indexInParent = [self.parentNode.childNodes.internalArray indexOfObject:self];
-        
+
         if( indexInParent < 1 )
             return nil;
         else
@@ -211,7 +211,7 @@
     else
     {
         NSUInteger indexInParent = [self.parentNode.childNodes.internalArray indexOfObject:self];
-        
+
         if( indexInParent >= [self.parentNode.childNodes length] )
             return nil;
         else
@@ -230,7 +230,7 @@
 	{
 		[self.childNodes.internalArray insertObject:newChild atIndex:[self.childNodes.internalArray indexOfObject:refChild]];
 	}
-	
+
 	return newChild;
 }
 
@@ -239,40 +239,40 @@
 	if( newChild.nodeType == DOMNodeType_DOCUMENT_FRAGMENT_NODE )
 	{
 		/** Spec:
-		 
+
 		 "If newChild is a DocumentFragment object, oldChild is replaced by all of the DocumentFragment children, which are inserted in the same order. If the newChild is already in the tree, it is first removed."
 		 */
-		
+
 		NSUInteger oldIndex = [self.childNodes.internalArray indexOfObject:oldChild];
-		
+
 		NSAssert( FALSE, @"We should be recursing down the tree to find 'newChild' at any location, and removing it - required by spec - but we have no convenience method for that search, yet" );
-		
+
 		for( Node* child in newChild.childNodes.internalArray )
 		{
 			[self.childNodes.internalArray insertObject:child atIndex:oldIndex++];
 		}
-		
+
 		newChild.parentNode = self;
 		oldChild.parentNode = nil;
-		
+
 		return oldChild;
 	}
 	else
 	{
 		[self.childNodes.internalArray replaceObjectAtIndex:[self.childNodes.internalArray indexOfObject:oldChild] withObject:newChild];
-		
+
 		newChild.parentNode = self;
 		oldChild.parentNode = nil;
-		
+
 		return oldChild;
 	}
 }
 -(Node*) removeChild:(Node*) oldChild
 {
 	[self.childNodes.internalArray removeObject:oldChild];
-	
+
 	oldChild.parentNode = nil;
-	
+
 	return oldChild;
 }
 
@@ -280,9 +280,9 @@
 {
 	[self.childNodes.internalArray removeObject:newChild]; // required by spec
 	[self.childNodes.internalArray addObject:newChild];
-	
+
 	newChild.parentNode = self;
-	
+
 	return newChild;
 }
 
@@ -321,16 +321,16 @@
 {
 	if( self.attributes == nil )
 		return FALSE;
-	
+
 	return (self.attributes.length > 0 );
 }
 
 #pragma mark - SPECIAL CASE: DOM level 3 method
 
-/** 
- 
+/**
+
  Note that the DOM 3 spec defines this as RECURSIVE:
- 
+
  http://www.w3.org/TR/2004/REC-DOM-Level-3-Core-20040407/core.html#Node3-textContent
  */
 -(NSString *)textContent
@@ -353,10 +353,10 @@
 				if( subText != nil ) // Yes, really: Apple docs require that you never append a nil substring. Sigh
 					[stringAccumulator appendString:subText];
 			}
-			
+
 			return [NSString stringWithString:stringAccumulator];
 		}
-			
+
 		case DOMNodeType_TEXT_NODE:
 		case DOMNodeType_CDATA_SECTION_NODE:
 		case DOMNodeType_COMMENT_NODE:
@@ -364,7 +364,7 @@
 		{
 			return self.nodeValue; // should never be nil; anything with a valid value will be at least an empty string i.e. ""
 		}
-			
+
 		case DOMNodeType_DOCUMENT_NODE:
 		case DOMNodeType_NOTATION_NODE:
 		case DOMNodeType_DOCUMENT_TYPE_NODE:
@@ -417,7 +417,7 @@
 		case DOMNodeType_PROCESSING_INSTRUCTION_NODE:
 			nodeTypeName = @"PROCESSING INSTRUCTION";
 			break;
-			
+
 		default:
 			nodeTypeName = @"N/A (DATA IS MISSING FROM NODE INSTANCE)";
 	}
@@ -428,19 +428,19 @@
 
 /** EXPERIMENTAL: not fully implemented or tested - this correctly outputs most SVG files, but is missing esoteric
  features such as EntityReferences, currently they are simply ignored
- 
+
  This method should be used hand-in-hand with the proprietary SVGDocument method "allNamespaces" and the SVGSVGElement method "
- 
+
  @param outputString an empty MUTABLE string we can accumulate with output (NB: this method uses a lot of memory, needs to accumulate data)
- 
+
  @param prefixesByKNOWNNamespace (required): a dictionary mapping "XML namespace URI" to "prefix to use inside the xml-tags", e.g. "http://w3.org/2000/svg" usually is mapped to "svg" (or to "", signifying it's the default namespace). This MUST include ALL NAMESPACES FOUND IN THE DOCUMENT (it's recommended you use SVGDocument's "allPrefixesByNamespace" method, and some post-processing, to get an accurate input here)
- 
+
  @param prefixesByACTIVENamespace (required): a mutable dictionary listing which elements of the other dictionary are active in-scope - i.e. which namespaces have been output by this node or a higher node in the tree. You pass-in an empty dictionary to the root SVG node and it fills it in as required.
  */
 -(void) appendXMLToString:(NSMutableString*) outputString availableNamespaces:(NSDictionary*) prefixesByKNOWNNamespace activeNamespaces:(NSMutableDictionary*) prefixesByACTIVENamespace
 {
 //	NSAssert(namespaceShortnames != nil, @"Must supply an empty dictionary for me to fill with encountered namespaces, and the shortnames I invented for them!");
-	
+
 	/** Opening */
 	switch( self.nodeType )
 	{
@@ -448,24 +448,24 @@
 		{
 			// ?
 		}break;
-			
+
 		case DOMNodeType_CDATA_SECTION_NODE:
 		{
 			[outputString appendFormat:@"<!--"];
 		}break;
-			
+
 		case DOMNodeType_COMMENT_NODE:
 		{
 			[outputString appendFormat:@"<![CDATA["];
 		}break;
-			
+
 		case DOMNodeType_DOCUMENT_FRAGMENT_NODE:
 		case DOMNodeType_DOCUMENT_NODE:
 		case DOMNodeType_ELEMENT_NODE:
 		{
 			[outputString appendFormat:@"<%@", self.nodeName];
 		}break;
-			
+
 		case DOMNodeType_DOCUMENT_TYPE_NODE:
 		case DOMNodeType_ENTITY_NODE:
 		case DOMNodeType_ENTITY_REFERENCE_NODE:
@@ -476,7 +476,7 @@
 			// ?
 		}break;
 	}
-	
+
 	/** ATTRIBUTES on the node (generally only applies to things of type "DOMNodeType_ELEMENT_NODE") */
 	NSDictionary* nodeMapsByNamespace = [self.attributes allNodesUnsortedDOM2];
 	NSMutableDictionary* newlyActivatedPrefixesByNamespace = [NSMutableDictionary dictionary];
@@ -488,7 +488,7 @@
 	for( NSString* xmlnsNodeName in xmlnsNodemap )
 	{
 		Node* attribute = [xmlnsNodemap objectForKey:xmlnsNodeName];
-		
+
 		if( [prefixesByACTIVENamespace objectForKey:xmlnsNodeName] == nil )
 		{
 			[newlyActivatedPrefixesByNamespace setObject:xmlnsNodeName forKey:attribute.nodeValue];
@@ -498,11 +498,11 @@
 				[outputString appendFormat:@" xmlns:%@=\"%@\"", xmlnsNodeName, attribute.nodeValue];
 		}
 	}
-	
+
 	/**
 	 Second, process "all" attributes, by namespace. Any time we find an attribute that "needs" a new
 	 namespace, we ACTIVATE it, and store it in the set of newly-activated namespaces.
-	 
+
 	 We will later replace our current "active" set with this new "active" set before we recurse to our
 	 child nodes
 	 */
@@ -510,40 +510,40 @@
 	{
 		if( [namespace isEqualToString:xmlnsNamespace] )
 			continue; // we had to handle this FIRST, so we've already done it
-		
+
 		NSString* localPrefix = [prefixesByACTIVENamespace objectForKey:namespace];
 		if( localPrefix == nil )
 		{
 			/** check if it's one of our freshly-activated ones */
 			localPrefix = [newlyActivatedPrefixesByNamespace objectForKey:namespace];
 		}
-		
+
 		if( localPrefix == nil )
 		{
 			/** If it STILL isn't active, (no parent Node has output it yet), we must activate it */
-			
+
 			localPrefix = [prefixesByKNOWNNamespace objectForKey:namespace];
-			
+
 			NSAssert( localPrefix != nil, @"Found a namespace (%@) in node (%@) which wasn't listed in the KNOWN namespaces you provided (%@); you MUST provide a COMPLETE list of known-namespaces to this method", namespace, self.nodeName, prefixesByKNOWNNamespace );
-			
+
 			[newlyActivatedPrefixesByNamespace setObject:localPrefix forKey:namespace];
 			[outputString appendFormat:@" xmlns:%@=\"%@\"", localPrefix, namespace];
 		}
-		
+
 		/** Finally: output the plain-old-attributes, overwriting their prefixes where necessary */
 		NSDictionary* nodeMap = [nodeMapsByNamespace objectForKey:namespace];
 		for( NSString* nodeNameFromMap in nodeMap )
 		{
 			Node* attribute = [nodeMap objectForKey:nodeNameFromMap];
-			
+
 			attribute.prefix = localPrefix; /** Overrides any default pre-existing value */
-			
+
 			[outputString appendFormat:@" %@=\"%@\"", attribute.nodeName, attribute.nodeValue];
 		}
 	}
 	/** Post-processing: after ATTRIBUTES, we need to modify the "ACTIVE" set of namespaces we're passing-down
 	 to our child nodes
-	 
+
 	 Create a NEW dictionary to pass to our descendents, so that our ancestors don't get to see it
 	 */
 	prefixesByACTIVENamespace = [NSMutableDictionary dictionaryWithDictionary:prefixesByACTIVENamespace];
@@ -556,14 +556,14 @@
 		{
 			// nothing
 		}break;
-			
+
 		case DOMNodeType_DOCUMENT_FRAGMENT_NODE:
 		case DOMNodeType_DOCUMENT_NODE:
 		case DOMNodeType_ELEMENT_NODE:
 		{
 			[outputString appendString:@">"];
 		}break;
-			
+
 		case DOMNodeType_DOCUMENT_TYPE_NODE:
 		case DOMNodeType_ENTITY_NODE:
 		case DOMNodeType_ENTITY_REFERENCE_NODE:
@@ -574,7 +574,7 @@
 			// nothing
 		}break;
 	}
-	
+
 	/** Middle: include child nodes (only applies to some nodes - others will have values, others will have simply "zero children") */
 	switch( self.nodeType )
 	{
@@ -590,7 +590,7 @@
 		{
 			[outputString appendString:self.nodeValue];
 		}break;
-			
+
 		case DOMNodeType_DOCUMENT_FRAGMENT_NODE:
 		case DOMNodeType_DOCUMENT_NODE:
 		case DOMNodeType_ELEMENT_NODE:
@@ -601,7 +601,7 @@
 			}
 		}break;
 	}
-	
+
 	/** End: close any nodes that opened an XML tag, or an XML comment or CDATA, during Opening */
 	switch( self.nodeType )
 	{
@@ -609,24 +609,24 @@
 		{
 			// nothing
 		}break;
-		
+
 		case DOMNodeType_CDATA_SECTION_NODE:
 		{
 			[outputString appendFormat:@"-->"];
 		}break;
-			
+
 		case DOMNodeType_COMMENT_NODE:
 		{
 			[outputString appendFormat:@"]]>"];
 		}break;
-		
+
 		case DOMNodeType_DOCUMENT_FRAGMENT_NODE:
 		case DOMNodeType_DOCUMENT_NODE:
 		case DOMNodeType_ELEMENT_NODE:
 		{
 			[outputString appendFormat:@"</%@>", self.nodeName];
 		}break;
-			
+
 		case DOMNodeType_DOCUMENT_TYPE_NODE:
 		case DOMNodeType_ENTITY_NODE:
 		case DOMNodeType_ENTITY_REFERENCE_NODE:
