@@ -19,7 +19,7 @@
 + (void) enableLogging {
 #if __has_include(<CocoaLumberjack/CocoaLumberjack.h>) || __has_include("CocoaLumberjack/CocoaLumberjack.h")
     #if TARGET_OS_IOS || TARGET_OS_TV
-        [DDLog addLogger:[DDOSLogger sharedInstance]];
+        [DDLog addLogger:[DDASLLogger sharedInstance]];
     #else
         [DDLog addLogger:[DDASLLogger sharedInstance]];
     #endif
