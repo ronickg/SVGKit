@@ -13,6 +13,7 @@ Icon?
 # Xcode
 build/*
 build/
+.build/
 build-frameworks/
 build-temp/
 *.pbxuser
