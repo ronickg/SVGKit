@@ -1,34 +1,23 @@
 #!/bin/bash
 
+# Build script for SVGKit Dynamic Framework XCFramework
+# This script builds a dynamic framework with CocoaPods dependencies
+
 set -e
 
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Configuration
-PROJECT_NAME="SVGKit-iOS"
-TARGET_NAME="SVGKit-iOS"
-LIBRARY_NAME="libSVGKit-iOS.2.1.0.a"
-XCFRAMEWORK_NAME="SVGKit.xcframework"
-CONFIGURATION="Debug" # Change to "Release" for release builds
-MIN_IOS_VERSION="12.0"
-
-# Paths
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-BUILD_DIR="${SCRIPT_DIR}/build"
-XCFRAMEWORK_OUTPUT="${BUILD_DIR}/${XCFRAMEWORK_NAME}"
-
-echo -e "${GREEN}================================${NC}"
-echo -e "${GREEN}SVGKit XCFramework Build Script${NC}"
-echo -e "${GREEN}================================${NC}"
-echo ""
-
-# Function to print colored messages
 print_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
 print_warning() {
@@ -39,199 +28,130 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Function to clean build directory
-clean() {
-    print_info "Cleaning previous builds..."
-    rm -rf "${BUILD_DIR}"
-    mkdir -p "${BUILD_DIR}"
-}
-
-# Function to build for a specific SDK
-build_for_sdk() {
-    local SDK="$1"
-    local OUTPUT_DIR="${BUILD_DIR}/${CONFIGURATION}-${SDK}"
-
-    print_info "Building for ${SDK}..."
-
-    # Prevent the build script from recursing by setting ALREADYINVOKED
-    export ALREADYINVOKED="true"
-
-    xcodebuild \
-        -project "${PROJECT_NAME}.xcodeproj" \
-        -target "${TARGET_NAME}" \
-        -configuration "${CONFIGURATION}" \
-        -sdk "${SDK}" \
-        EXCLUDED_ARCHS="" \
-        IPHONEOS_DEPLOYMENT_TARGET="${MIN_IOS_VERSION}" \
-        BUILD_DIR="${BUILD_DIR}" \
-        SYMROOT="${BUILD_DIR}" \
-        OBJROOT="${BUILD_DIR}/Intermediates" \
-        ONLY_ACTIVE_ARCH=NO \
-        build \
-        | grep -E "error:|warning:|Building|Libtool|PhaseScriptExecution" || true
-
-    if [ ! -f "${OUTPUT_DIR}/${LIBRARY_NAME}" ]; then
-        print_error "Build failed for ${SDK}! Library not found at ${OUTPUT_DIR}/${LIBRARY_NAME}"
-        exit 1
-    fi
-
-    print_info "✓ Successfully built for ${SDK}"
-}
-
-# Function to verify library architectures
-verify_architectures() {
-    local LIBRARY_PATH="$1"
-    local EXPECTED_ARCHS="$2"
-
-    print_info "Verifying architectures in $(basename ${LIBRARY_PATH})..."
-    lipo -info "${LIBRARY_PATH}"
-}
-
-# Function to create XCFramework
-create_xcframework() {
-    print_info "Creating XCFramework..."
-
-    local DEVICE_LIB="${BUILD_DIR}/${CONFIGURATION}-iphoneos/${LIBRARY_NAME}"
-    local SIMULATOR_LIB="${BUILD_DIR}/${CONFIGURATION}-iphonesimulator/${LIBRARY_NAME}"
-    local DEVICE_HEADERS="${BUILD_DIR}/${CONFIGURATION}-iphoneos/usr/local/include"
-    local SIMULATOR_HEADERS="${BUILD_DIR}/${CONFIGURATION}-iphonesimulator/usr/local/include"
-
-    # Verify both libraries exist
-    if [ ! -f "${DEVICE_LIB}" ]; then
-        print_error "Device library not found at ${DEVICE_LIB}"
-        exit 1
-    fi
-
-    if [ ! -f "${SIMULATOR_LIB}" ]; then
-        print_error "Simulator library not found at ${SIMULATOR_LIB}"
-        exit 1
-    fi
-
-    # Verify headers exist
-    if [ ! -d "${DEVICE_HEADERS}" ]; then
-        print_error "Device headers not found at ${DEVICE_HEADERS}"
-        exit 1
-    fi
-
-    # Remove existing XCFramework
-    rm -rf "${XCFRAMEWORK_OUTPUT}"
-
-    # Create XCFramework
-    xcodebuild -create-xcframework \
-        -library "${DEVICE_LIB}" \
-        -headers "${DEVICE_HEADERS}" \
-        -library "${SIMULATOR_LIB}" \
-        -headers "${SIMULATOR_HEADERS}" \
-        -output "${XCFRAMEWORK_OUTPUT}"
-
-    if [ ! -d "${XCFRAMEWORK_OUTPUT}" ]; then
-        print_error "Failed to create XCFramework!"
-        exit 1
-    fi
-
-    print_info "✓ Successfully created XCFramework"
-}
-
-# Function to display build summary
-show_summary() {
+print_section() {
     echo ""
-    echo -e "${GREEN}================================${NC}"
-    echo -e "${GREEN}Build Summary${NC}"
-    echo -e "${GREEN}================================${NC}"
-    echo ""
-
-    print_info "XCFramework: ${XCFRAMEWORK_OUTPUT}"
-    echo ""
-
-    # Show XCFramework structure
-    print_info "XCFramework structure:"
-    ls -lh "${XCFRAMEWORK_OUTPUT}"
-    echo ""
-
-    # Show architectures for each slice
-    print_info "Device slice architectures:"
-    lipo -info "${XCFRAMEWORK_OUTPUT}/ios-arm64/${LIBRARY_NAME}"
-    echo ""
-
-    print_info "Simulator slice architectures:"
-    lipo -info "${XCFRAMEWORK_OUTPUT}/ios-arm64_x86_64-simulator/${LIBRARY_NAME}"
-    echo ""
-
-    # Show total size
-    local TOTAL_SIZE=$(du -sh "${XCFRAMEWORK_OUTPUT}" | cut -f1)
-    print_info "Total size: ${TOTAL_SIZE}"
-    echo ""
-
-    echo -e "${GREEN}================================${NC}"
-    echo -e "${GREEN}✓ Build completed successfully!${NC}"
-    echo -e "${GREEN}================================${NC}"
-    echo ""
-    echo "To use in your project:"
-    echo "1. Drag ${XCFRAMEWORK_NAME} into your Xcode project"
-    echo "2. Add '-ObjC' to Other Linker Flags"
-    echo "3. Link required frameworks: CoreText, CoreImage, libxml2, QuartzCore, CoreGraphics, UIKit"
+    echo "================================"
+    echo "$1"
+    echo "================================"
     echo ""
 }
 
-# Main build process
-main() {
-    # Check if we're in the correct directory
-    if [ ! -f "${PROJECT_NAME}.xcodeproj/project.pbxproj" ]; then
-        print_error "Could not find ${PROJECT_NAME}.xcodeproj in current directory!"
-        print_error "Please run this script from the SVGKit root directory."
-        exit 1
-    fi
+# Configuration
+WORKSPACE="SVGKit-iOS.xcworkspace"
+SCHEME="SVGKitFramework-iOS"
+CONFIGURATION="Release"
+BUILD_DIR="${PWD}/build-frameworks"
+OUTPUT_DIR="${PWD}/build"
+XCFRAMEWORK_NAME="SVGKit.xcframework"
 
-    # Clean previous builds
-    clean
+print_section "Building SVGKit Dynamic Framework"
 
-    # Build for iOS device
-    build_for_sdk "iphoneos"
+# Check if workspace exists
+if [ ! -d "${WORKSPACE}" ]; then
+    print_error "Workspace not found: ${WORKSPACE}"
+    print_info "Make sure CocoaPods is installed and run 'pod install' first"
+    exit 1
+fi
 
-    # Build for iOS simulator
-    build_for_sdk "iphonesimulator"
+# Clean previous builds
+print_info "Cleaning previous builds..."
+rm -rf "${BUILD_DIR}" "${OUTPUT_DIR}"
 
-    # Verify architectures
-    verify_architectures "${BUILD_DIR}/${CONFIGURATION}-iphoneos/${LIBRARY_NAME}" "arm64"
-    verify_architectures "${BUILD_DIR}/${CONFIGURATION}-iphonesimulator/${LIBRARY_NAME}" "arm64 x86_64"
+# Build for iOS Device (arm64)
+print_section "Building for iOS Device (arm64)"
+xcodebuild \
+    -workspace "${WORKSPACE}" \
+    -scheme "${SCHEME}" \
+    -configuration "${CONFIGURATION}" \
+    -sdk iphoneos \
+    -arch arm64 \
+    build \
+    SYMROOT="${BUILD_DIR}" \
+    CODE_SIGNING_ALLOWED=NO \
+    CODE_SIGNING_REQUIRED=NO \
+    EXCLUDED_ARCHS="" \
+    | grep -E "^\*\*|warning:|error:|note:" || true
 
-    # Create XCFramework
-    create_xcframework
+if [ ! -f "${BUILD_DIR}/${CONFIGURATION}-iphoneos/SVGKit.framework/SVGKit" ]; then
+    print_error "Device framework binary not created"
+    exit 1
+fi
 
-    # Show summary
-    show_summary
-}
+print_success "Device framework built successfully"
+lipo -info "${BUILD_DIR}/${CONFIGURATION}-iphoneos/SVGKit.framework/SVGKit"
 
-# Parse command line arguments
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --release)
-            CONFIGURATION="Release"
-            print_info "Building in Release configuration"
-            shift
-            ;;
-        --clean-only)
-            clean
-            print_info "Clean completed"
-            exit 0
-            ;;
-        --help)
-            echo "Usage: $0 [options]"
-            echo ""
-            echo "Options:"
-            echo "  --release      Build in Release configuration (default: Debug)"
-            echo "  --clean-only   Clean build directory and exit"
-            echo "  --help         Show this help message"
-            echo ""
-            exit 0
-            ;;
-        *)
-            print_error "Unknown option: $1"
-            echo "Use --help for usage information"
-            exit 1
-            ;;
-    esac
-done
+# Build for iOS Simulator (x86_64 + arm64)
+print_section "Building for iOS Simulator (x86_64 + arm64)"
+xcodebuild \
+    -workspace "${WORKSPACE}" \
+    -scheme "${SCHEME}" \
+    -configuration "${CONFIGURATION}" \
+    -sdk iphonesimulator \
+    ARCHS="x86_64 arm64" \
+    build \
+    SYMROOT="${BUILD_DIR}" \
+    CODE_SIGNING_ALLOWED=NO \
+    CODE_SIGNING_REQUIRED=NO \
+    EXCLUDED_ARCHS="" \
+    ONLY_ACTIVE_ARCH=NO \
+    | grep -E "^\*\*|warning:|error:|note:" || true
 
-# Run main build process
-main
+if [ ! -f "${BUILD_DIR}/${CONFIGURATION}-iphonesimulator/SVGKit.framework/SVGKit" ]; then
+    print_error "Simulator framework binary not created"
+    exit 1
+fi
+
+print_success "Simulator framework built successfully"
+lipo -info "${BUILD_DIR}/${CONFIGURATION}-iphonesimulator/SVGKit.framework/SVGKit"
+
+# Create XCFramework
+print_section "Creating XCFramework"
+xcodebuild -create-xcframework \
+    -framework "${BUILD_DIR}/${CONFIGURATION}-iphoneos/SVGKit.framework" \
+    -framework "${BUILD_DIR}/${CONFIGURATION}-iphonesimulator/SVGKit.framework" \
+    -output "${BUILD_DIR}/${XCFRAMEWORK_NAME}"
+
+print_success "XCFramework created successfully"
+
+# Copy to output directory
+print_info "Copying to output directory..."
+mkdir -p "${OUTPUT_DIR}"
+cp -R "${BUILD_DIR}/${XCFRAMEWORK_NAME}" "${OUTPUT_DIR}/"
+
+# Summary
+print_section "Build Summary"
+
+print_info "XCFramework: ${OUTPUT_DIR}/${XCFRAMEWORK_NAME}"
+echo ""
+print_info "XCFramework structure:"
+ls -lh "${OUTPUT_DIR}/${XCFRAMEWORK_NAME}"
+echo ""
+
+print_info "Device slice architectures:"
+lipo -info "${OUTPUT_DIR}/${XCFRAMEWORK_NAME}/ios-arm64/SVGKit.framework/SVGKit"
+echo ""
+
+print_info "Simulator slice architectures:"
+lipo -info "${OUTPUT_DIR}/${XCFRAMEWORK_NAME}/ios-arm64_x86_64-simulator/SVGKit.framework/SVGKit"
+echo ""
+
+print_info "Total size: $(du -sh ${OUTPUT_DIR}/${XCFRAMEWORK_NAME} | cut -f1)"
+echo ""
+
+# Verify macOS-only headers are guarded
+print_info "Verifying macOS-only header guards..."
+if grep -q "#if TARGET_OS_OSX" "${OUTPUT_DIR}/${XCFRAMEWORK_NAME}/ios-arm64/SVGKit.framework/Headers/SVGKit.h"; then
+    print_success "✓ macOS-only headers are properly guarded"
+else
+    print_warning "⚠ macOS-only headers may not be guarded"
+fi
+
+print_section "✓ Build completed successfully!"
+
+echo "To use in your project:"
+echo "1. Drag ${XCFRAMEWORK_NAME} into your Xcode project"
+echo "2. The framework will automatically link CocoaLumberjack"
+echo "3. Import in Swift: import SVGKit"
+echo "4. Import in Objective-C: #import <SVGKit/SVGKit.h>"
+echo ""
+echo "Note: This is a dynamic framework. Make sure it's embedded in your app bundle."

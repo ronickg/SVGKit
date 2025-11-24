@@ -8,22 +8,12 @@
 
 #import "SVGKit.h"
 
-#if __has_include(<CocoaLumberjack/CocoaLumberjack.h>)
-#import <CocoaLumberjack/CocoaLumberjack.h>
-#elif __has_include("CocoaLumberjack/CocoaLumberjack.h")
-#import "CocoaLumberjack/CocoaLumberjack.h"
-#endif
-
 @implementation SVGKit : NSObject
 
 + (void) enableLogging {
-#if __has_include(<CocoaLumberjack/CocoaLumberjack.h>) || __has_include("CocoaLumberjack/CocoaLumberjack.h")
-    #if TARGET_OS_IOS || TARGET_OS_TV
-        [DDLog addLogger:[DDASLLogger sharedInstance]];
-    #else
-        [DDLog addLogger:[DDASLLogger sharedInstance]];
-    #endif
-#endif
+    // Logging is now always enabled in DEBUG mode via NSLog
+    // See SVGKDefine_Private.h for logging macros
+    NSLog(@"[SVGKit] Logging is enabled via NSLog");
 }
 
 @end
